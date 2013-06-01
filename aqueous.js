@@ -1,27 +1,44 @@
-/*
- * Aqueous - jQuery Plugin
- * Copyright (c) 2013 Jon Zumbrun - shuttercard.com
- */
-(function($){
+/**
+Aqueous HTML Designer
+Copyright (C) 2013  shuttercard.com
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, version 3 of the License.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+**/
+(function(Aqueous, $){
+
+	/*!
+	  * $script.js Async loader & dependency manager
+	  * https://github.com/ded/script.js
+	  * (c) Dustin Diaz 2013
+	  * License: MIT
+	  */
+	(function(e,t,n){typeof module!="undefined"&&module.exports?module.exports=n():typeof define=="function"&&define.amd?define(n):t[e]=n()})("$script",this,function(){function v(e,t){for(var n=0,r=e.length;n<r;++n)if(!t(e[n]))return f;return 1}function m(e,t){v(e,function(e){return!t(e)})}function g(e,t,a){function d(e){return e.call?e():r[e]}function b(){if(!--p){r[h]=1,c&&c();for(var e in s)v(e.split("|"),d)&&!m(s[e],d)&&(s[e]=[])}}e=e[l]?e:[e];var f=t&&t.call,c=f?t:a,h=f?e.join(""):t,p=e.length;return setTimeout(function(){m(e,function(e){if(e===null)return b();if(u[e])return h&&(i[h]=1),u[e]==2&&b();u[e]=1,h&&(i[h]=1),y(!n.test(e)&&o?o+e+".js":e,b)})},0),g}function y(n,r){var i=e.createElement("script"),s=f;i.onload=i.onerror=i[d]=function(){if(i[h]&&!/^c|loade/.test(i[h])||s)return;i.onload=i[d]=null,s=1,u[n]=2,r()},i.async=1,i.src=n,t.insertBefore(i,t.firstChild)}var e=document,t=e.getElementsByTagName("head")[0],n=/^https?:\/\//,r={},i={},s={},o,u={},a="string",f=!1,l="push",c="DOMContentLoaded",h="readyState",p="addEventListener",d="onreadystatechange";return!e[h]&&e[p]&&(e[p](c,function b(){e.removeEventListener(c,b,f),e[h]="complete"},f),e[h]="loading"),g.get=y,g.order=function(e,t,n){(function r(i){i=e.shift(),e.length?g(i,r):g(i,t,n)})()},g.path=function(e){o=e},g.ready=function(e,t,n){e=e[l]?e:[e];var i=[];return!m(e,function(e){r[e]||i[l](e)})&&v(e,function(e){return r[e]})?t():!function(e){s[e]=s[e]||[],s[e][l](t),n&&n(i)}(e.join("|")),g},g.done=function(e){g([null],e)},g})	
 	
-	// Aqueous Module
-	var Aqueous = {
+	Aqueous = {
 		addTool : function(name, options, callback){
-			if(typeof this.tools[name] == 'undefined'){
+			var self = this;
+			if(typeof self.tools[name] == 'undefined'){
 				options.name = name;
-				this.tools[name] = new Tool(options,callback);
+				self.tools[name] = new Tool(options,callback);
 			}
 		},
-		tools : [],
-		scripts : function(options){
-			
-			this.js = [{jqueryui : }];
-			if(){
-
-			}			
-
-
-		}
+		tools : [], 	// array container for added tools
+		loading : [],	// scripts to load
+		is_loaded : 0, 	// a check to see if we have alread ran the loading process
+		webfonts : ['Open Sans','Droid Serif'],
+		web_font_config : {
+    		google: { families: [ 'Source+Sans:400italic,700italic,400,700:latin','Droid+Serif:400,700,400italic,700italic:latin' ] }
+  		}
 	};
 
 	// Designer
@@ -41,7 +58,7 @@
 			$.extend(self, {
 				aqueous : Aqueous,
 				element : $(element), // element
-				use : ['bold', 'italic', 'color', 'text', 'erase','settings'], // tools to use
+				use : ['add', 'remove','bold', 'italic', 'color','font','size','image','layer','settings'], // tools to use
 				tools : [], // active tools for this designer
 				beforeLoad : function(self){
 				},
@@ -57,11 +74,13 @@
 		
 		// Build it
 		self.build = function(){
-			validate();
-			prep();
-			loadBelt();
-			loadTools();
-			loadBlocks();
+			loadScripts(function(){
+				validate();
+				prep();
+				loadBelt();
+				loadTools();
+				loadBlocks();
+			});
 		};
 
 		// PUBLIC 
@@ -93,9 +112,9 @@
 		
 		};
 		
-		// erase a block from the designer
-		self.eraseBlock = function(){
-			self.selected_block.erase();
+		// remove a block from the designer
+		self.removeBlock = function(){
+			self.selected_block.remove();
 			delete self.blocks[self.selected_block.id];
 			self.selected_block = null;
 			resetTools();
@@ -115,6 +134,56 @@
 
 		// PRIVATE 
 
+		// we only need to load scripts once per request not per designer instantiation
+		function loadScripts(callback){
+
+			if(!self.aqueous.is_loaded){
+
+				if(typeof options.base === 'undefined'){
+					options.base = '';
+				}
+
+				// load fonts
+				loadWebFonts();
+
+				// load css files
+				var css_files = ['aqueous','font-awesome','spectrum','jqueryui'];
+				$.each(css_files,function(index, file){
+					$('head').append('<link rel="stylesheet" type="text/css" href="' + options.base + 'css/' + file + '.css" >');
+				});
+
+				if(typeof $.draggable !== 'function' || typeof $.resizable !== 'function'){
+					self.aqueous.loading.push('jqueryui');
+					$script(options.base + 'scripts/jqueryui.js', 'jqueryui');
+				}
+
+				if(typeof $.spectrum !== 'function'){
+					self.aqueous.loading.push('spectrum');
+					$script(options.base + 'scripts/spectrum.js', 'spectrum');
+				}
+
+				if(self.aqueous.loading.length > 0){
+					$script.ready(self.aqueous.loading, function() {
+						self.aqueous.is_loaded = true;
+  						callback();
+					});
+				}
+			}
+			else{
+				callback();
+			}
+		}
+
+		// Validate incoming data
+		function loadWebFonts(){
+
+			var WebFontConfig = self.aqueous.web_font_config;
+
+      		self.aqueous.loading.push('webfonts');
+      		$script('https://ajax.googleapis.com/ajax/libs/webfont/1/webfont.js','webfonts');
+
+		}
+
 		// Validate incoming data
 		function validate(){
 
@@ -128,7 +197,7 @@
 
 		}
 		
-			// Prepare the target div
+		// Prepare the target div
 		function prep(){
 		
 			self.element.css({padding : '5px', border : '#ccc 1px solid'});
@@ -148,7 +217,9 @@
 		// Load Tools
 		function loadTools(){
 			$.each(self.use, function(name,tool){
-				self.tools[name] = self.aqueous.tools[tool].add(self);
+				if(typeof self.aqueous.tools[tool] !== 'undefined'){
+					self.tools[name] = self.aqueous.tools[tool].add(self);
+				}
 			});
 		}
 	
@@ -200,12 +271,13 @@
 		};
 		
 			// Erase the block
-		self.erase = function(){
+		self.remove = function(){
 			self.container.remove();
 			};
 				
 		// set style to the selected block
 		self.setStyle = function(name, value) {
+			console.log(name);
 			self.editable.css(name, value);
 		};
 	
@@ -275,8 +347,8 @@
 					tool.enable(); // enable them for use
 					tool.hung(); // but make sure all tools are put away first
 					// check to see if the block is using them now
-					if(typeof tool.using === 'function' && tool.using(self)){
-						tool.inuse(self);
+					if(typeof tool.using === 'function' && tool.using.call(tool,self)){
+						tool.inuse.call(tool,self);
 					}
 				}
 				
@@ -300,6 +372,8 @@
 			html : '',
 			position : {},
 			menu : {},
+			use : function(){
+			}, 
 			reset : function(){
 				if(self.disabled){
 					self.disable();
@@ -356,7 +430,7 @@
 	
 		// has menu
 		self.hasMenu = function(){
-			return typeof self.menu.items === 'object';
+			return typeof self.menu.items === 'object' || typeof self.menu.items === 'function';
 		};
 		
 		// PRIVATE
@@ -378,28 +452,29 @@
 	
 		// bind
 		function bind(){
-		self.container.on('click', 
-			function(e){
-				e.preventDefault();
-				if(self.disabled){
-					if($(this).hasClass('inuse')){
-						self.hang(self.designer.selected_block);
-						self.hung();
+			self.container.on('click', 
+				function(e){
+					e.preventDefault();
+					if(self.disabled){
+						if($(this).hasClass('inuse')){
+							self.hang.call(self, self.designer.selected_block);
+							self.hung.call(self);
+						}
+						else{
+							self.use.call(self, self.designer.selected_block);
+							self.inuse.call(self);
+						}
 					}
 					else{
-						self.use(self.designer.selected_block);
-						self.inuse();
+						self.use.call(self, self.designer.selected_block);
 					}
-				}
-				else{
-					self.use(self.designer.selected_block);
-				}
+					
+					if(self.hasMenu()){
+						self.menu.toggle();
+					}
 				
-				if(self.hasMenu()){
-					self.menu.toggle();
 				}
-			
-			});
+			);
 		}
 	
 		// Build the tool container
@@ -418,7 +493,7 @@
 			if(self.hasMenu()){
 				self.menu = new Menu(self.menu);
 				self.menu.add(self);
-				self.container.append(self.menu.container);
+				self.container.after(self.menu.container);
 			}
 		}
 	}
@@ -429,7 +504,7 @@
 		$.extend(self, {
 			title:'',
 			tool: null,
-			items : [],
+			items : null,
 			position : {}
 		}, options);
 
@@ -446,6 +521,9 @@
 		
 		// toggle menu
 		self.toggle = function(){
+			// always hide all other menus
+			$('.aqueous-menu').not(self.container).hide();
+			console.log(self.container);
 			self.container.toggle();
 		};
 		
@@ -468,16 +546,33 @@
 		
 		//build and bind items
 		function buildItems() {
+
+			if(typeof self.items === 'function'){
+				self.items = self.items.apply(self);
+			}
+
 			$.each(self.items,function(index, item){
 			
 				self.items[index].container = $('<a class="aqueous-menu-item" href="javascript:void(0);" />');
-				self.items[index].container.html(item.text);
+				self.items[index].container.html(item.label);
 				self.items[index].container.on('click',function(){
-					if(typeof item.click === 'function'){
-						item.click.apply(self, self.items[index]);
+					if(typeof item.use === 'function'){
+						
+						if(self.tool.disabled){
+							item.use.call(self,self.tool.designer.selected_block);
+						}
+						else{
+							item.use.call(self);
+						}
+						
 					}
 					else{
-						self.use.apply(self, self.items[index]);
+						if(self.tool.disabled){
+							self.use.call(self,self.tool.designer.selected_block);
+						}
+						else{
+							self.use.call(self);
+						}
 					}
 					
 				});
@@ -574,7 +669,7 @@
 				self.buttons.push({
 					label:'Continue', 
 					click : function(){
-						self.confirm.apply(self);
+						self.confirm.call(self);
 						self.close();
 					}
 				});
@@ -586,7 +681,7 @@
 				self.buttons[index].container.html(button.label);
 				self.buttons[index].container.on('click',function(){
 					if(typeof button.click === 'function'){
-						button.click.apply(self, self.buttons[index]);
+						button.click.call(self, self.buttons[index]);
 					} 
 				
 			});
@@ -600,107 +695,207 @@
 
 	// Add Tools to
 	Aqueous.addTool('bold',
-	{
-		icon : 'icon-bold',
-		disabled : true,
-		use : function(block){
-			block.setStyle('font-weight', 'bold');
-		},
-		hang : function(block){
-			block.setStyle('font-weight', 'normal');
-		},
-		using : function(block){
-			return block.hasStyle('font-weight', 'bold');
+		{
+			icon : 'icon-bold',
+			disabled : true,
+			use : function(block){
+				block.setStyle('font-weight', 'bold');
+			},
+			hang : function(block){
+				block.setStyle('font-weight', 'normal');
+			},
+			using : function(block){
+				return block.hasStyle('font-weight', 'bold');
+			}
 		}
-	}
 
 	);
 
 	Aqueous.addTool('italic',
-	{
-		icon : 'icon-italic',
-		disabled : true,
-		use : function(block){
-			block.setStyle('font-style', 'italic');
-		},
-		hang : function(block){
-			block.setStyle('font-style', 'normal');
-		},
-		using : function(block){
-			return block.hasStyle('font-style', 'italic');
-		}
-	}
-
-	);
-
-	Aqueous.addTool('text',
-	{
-		icon : 'icon-font',
-		title : 'add a text block',
-		use : function(){
-			var self = this;
-			var block = self.designer.addBlock();
-		}
-	}
-
-	);
-
-	Aqueous.addTool('erase',
-	{
-		icon : 'icon-eraser',
-		title : 'erase a block',
-		disabled : true,
-		use : function(){
-			var self = this;
-			
-			if(!self.designer.selected_block){
-				return false;
+		{
+			icon : 'icon-italic',
+			disabled : true,
+			use : function(block){
+				block.setStyle('font-style', 'italic');
+			},
+			hang : function(block){
+				block.setStyle('font-style', 'normal');
+			},
+			using : function(block){
+				return block.hasStyle('font-style', 'italic');
 			}
-			self.designer.showDialog({
-				title: 'Are your sure you want to erase this block?',
-				confirm : function(){
-					self.designer.eraseBlock();
-				}
-			});
 		}
-	}
+
+	);
+
+	Aqueous.addTool('add',
+		{
+			icon : 'icon-plus-sign',
+			title : 'add a text block',
+			use : function(){
+				var self = this;
+				var block = self.designer.addBlock();
+			}
+		}
+
+	);
+
+	Aqueous.addTool('remove',
+		{
+			icon : 'icon-remove-sign',
+			title : 'remove a block',
+			disabled : true,
+			use : function(){
+				var self = this;
+				
+				if(!self.designer.selected_block){
+					return false;
+				}
+				self.designer.showDialog({
+					title: 'Are your sure you want to remove this block?',
+					confirm : function(){
+						self.designer.removeBlock();
+					}
+				});
+			}
+		}
 
 	);
 
 	Aqueous.addTool('color',
-	{
-		html : '<input type="text" />',
-		disabled : true,
-		title : 'text color',
-		enable : function(){
-			var self = this;
-			$('input',self.container).spectrum('enable');
-		},
-		disable : function(){
-			var self = this;
-			$('input',self.container).spectrum('disable');
-		},
-		bind : function(){
-			var self = this;
-			
-			$('input',self.container).spectrum({
-				color: '#000',
-				disabled: true,
-				change: function(color) {
-					self.designer.selected_block.setStyle({color : color.toHexString()});
+		{
+			html : '<input type="text" />',
+			disabled : true,
+			title : 'text color',
+			enable : function(){
+				var self = this;
+				$('input',self.container).spectrum('enable');
+			},
+			disable : function(){
+				var self = this;
+				$('input',self.container).spectrum('disable');
+			},
+			bind : function(){
+				var self = this;
+				
+				$('input',self.container).spectrum({
+					color: '#000',
+					disabled: true,
+					change: function(color) {
+						self.designer.selected_block.setStyle({color : color.toHexString()});
+					}
+				}); 
+			},
+			using : function(block){
+				var self = this;
+				var color = block.getStyle('color');
+				
+				if(color){
+					$('input',self.container).spectrum('set', color);
 				}
-			}); 
-		},
-		using : function(block){
-			var self = this;
-			var color = block.getStyle('color');
-			
-			if(color){
-				$('input',self.container).spectrum('set', color);
+				return false;
 			}
-			return false;
 		}
-	}
+
+	);
+
+	Aqueous.addTool('font',
+		{
+			icon : 'icon-font',
+			title : 'change font',
+			menu : {
+				title: 'Font',
+				items: [
+					{ label: 'toggle safe line',
+						checkbox : function(){
+							var self = this;
+							self.designer.toggleSafeLine();
+						}
+					},
+					{ label: 'toggle block borders',
+						checkbox : function(){
+							var self = this;
+							self.designer.toggleBlockBorders();
+							}
+						}
+				]},
+			use : function(){}
+		}
+
+	);
+
+	Aqueous.addTool('size',
+		{
+			html : '12',
+			title : 'change size',
+			disabled : true,
+			menu : {
+				title: 'text size',
+				items: function(){
+					var self = this;
+
+					var items = [];
+					var sizes = ['8','9','10','11','12','14','16','18','20','22','24','26','28','36','48','72']
+					$.each(sizes,function(index, size){
+						items.push({ 
+							label: '<span style="line-height:' + size + 'px;font-size:' + size + 'px">' + size + '</span>',
+							use : function(block){
+								var self = this;
+								block.setStyle('font-size', size + 'px');
+								block.setStyle('line-height', size + 'px');
+								self.tool.container.html(size);
+							}
+						});
+					});
+					return items;
+				}
+			},
+			hang : function(block){
+				var self = this;
+				self.container.html('12');
+			},
+			using : function(block){
+				var self = this;
+				var size = block.getStyle('font-size').replace('px', '');
+				self.container.html(size);
+
+				return false;
+			}
+		}
+
+	);
+
+	Aqueous.addTool('image',
+		{
+			icon : 'icon-picture',
+			title : 'add image',
+			use : function(){}
+		}
+
+	);
+
+	Aqueous.addTool('layer',
+		{
+			icon : 'icon-reorder',
+			title : 'move forward or back',
+			menu : {
+				title: 'move forward or back',
+				items: [
+					{ label: 'toggle safe line',
+						checkbox : function(){
+							var self = this;
+							self.designer.toggleSafeLine();
+						}
+					},
+					{ label: 'toggle block borders',
+						checkbox : function(){
+							var self = this;
+							self.designer.toggleBlockBorders();
+							}
+						}
+				]},
+			use : function(){}
+		}
 
 	);
 
@@ -708,21 +903,21 @@
 		{
 			icon : 'icon-cog',
 			menu : {
-			title: 'Settings',
-			items: [
-				{ text: 'toggle safe line',
-					checkbox : function(){
-						var self = this;
-						self.designer.toggleSafeLine();
-					}
-				},
-				{ text: 'toggle block borders',
-					checkbox : function(){
-						var self = this;
-						self.designer.toggleBlockBorders();
+				title: 'Settings',
+				items: [
+					{ text: 'toggle safe line',
+						checkbox : function(){
+							var self = this;
+							self.designer.toggleSafeLine();
 						}
-					}
-			]},
+					},
+					{ text: 'toggle block borders',
+						checkbox : function(){
+							var self = this;
+							self.designer.toggleBlockBorders();
+							}
+						}
+				]},
 			title : 'designer settings',
 			use : function(){}
 		}
@@ -731,14 +926,10 @@
 
 	// Bind the plugin to jquery
 	$.fn.aqueous = function(options){
-
-		// Load scripts
-		Aqueous.scripts(options);
-
 		return this.each(function(){
 			var designer = new Designer(this, options);
 			return designer.build();
 		});
 	};
 
-})(jQuery);
+})(window.Aqueous || {}, jQuery);
