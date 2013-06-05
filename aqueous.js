@@ -35,10 +35,23 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 		tools : [], 	// array container for added tools
 		loading : [],	// scripts to load
 		is_loaded : 0, 	// a check to see if we have alread ran the loading process
-		webfonts : ['Open Sans','Droid Serif'],
-		web_font_config : {
-    		google: { families: [ 'Source+Sans:400italic,700italic,400,700:latin','Droid+Serif:400,700,400italic,700italic:latin' ] }
-  		}
+		fonts : {
+			default : {name: 'Arial', style: "arial,helvetica,sans-serif"},
+			system : 
+				[{name: 'Arial', style: "arial,helvetica,sans-serif"},
+				{name: 'Comic Sans', style: "'comic sans ms',cursive"},
+				{name: 'Courier New', style: "'courier new',courier,monospace"},
+				{name: 'Georgia', style: 'georgia,serif'},
+				{name: 'Tahoma', style: 'tahoma,geneva,sans-serif'},
+				{name: 'Times New Roman', style: "'times new roman',times,serif"}
+			], 
+			web :
+				[{name: 'Open Sans', style: 'Open+Sans:400italic,700italic,400,700:latin'},
+				{name: 'Droid Serif', style: 'Droid+Serif:400,700,400italic,700italic:latin'}
+			] 
+		},
+		web_font_config : window.WebFontConfig || {},
+		sizes : ['8','9','10','11','12','14','16','18','20','22','24','26','28','36','48','72']
 	};
 
 	// Designer
@@ -177,8 +190,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 		// Validate incoming data
 		function loadWebFonts(){
 
-			var WebFontConfig = self.aqueous.web_font_config;
+			if(typeof Aqueous.fonts.web !== 'undefined' && Aqueous.fonts.web.length){
+				
+				var families = [];
+				$.each(Aqueous.fonts.web, function(name, font){
+					families.push(font.style);
+				});
 
+				// the web font convention is to only load webfonts from google
+				if(families.length){
+					Aqueous.web_font_config.google = { families: families };
+				}
+			}
+
+			// otherwise allow webfonts from anywhere
+			window.WebFontConfig = Aqueous.web_font_config;
       		self.aqueous.loading.push('webfonts');
       		$script('https://ajax.googleapis.com/ajax/libs/webfont/1/webfont.js','webfonts');
 
@@ -208,6 +234,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 			self.width = self.element.width();
 			
 			self.safe_line = $('<div class="aqueous-safe-line" />');
+			
+			// binding
+			self.safe_line.on('click', function(e){$('.aqueous-menu').hide();});
 			self.safe_line.css({height: self.height-13 + 'px', width: self.width-13 + 'px'});
 			
 			self.element.wrapInner(self.safe_line);
@@ -225,7 +254,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 	
 		// Load Belt
 		function loadBelt(){
-			self.belt = $('<div class="aqueous-belt"></div>');
+			self.belt = $('<div class="aqueous-belt aqueous-clear"></div>');
 			self.belt.css({width : (self.width +10) +'px'});
 			self.element.before(self.belt);
 		}
@@ -260,7 +289,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 			
 		}();
 			
-			// Add the block
+		// Add the block
 		self.add = function(designer){
 			
 			self.designer = designer;
@@ -277,7 +306,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 				
 		// set style to the selected block
 		self.setStyle = function(name, value) {
-			console.log(name);
 			self.editable.css(name, value);
 		};
 	
@@ -306,6 +334,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 			self.container.css({'z-index' : self.designer.zindex_start+self.id, position : 'absolute'});
 			self.handle = $('<div class="aqueous-block-handle icon-move"></div>');
 			self.editable = $('<div class="aqueous-block-editable" contenteditable="true"></div>');
+			
+			// set default font
+			self.editable.css('font-family', Aqueous.fonts.default);
 			if(self.type == 'text'){
 				self.editable.html('add your text here');
 			}
@@ -337,20 +368,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 			// tool binding
 			self.container.on('click', 
 				function(e){
-				e.preventDefault();
-				
-				self.designer.selected_block = self;
-				
-				// enable all the tools now
-				for(var name in self.designer.tools) {
-					tool = self.designer.tools[name];
-					tool.enable(); // enable them for use
-					tool.hung(); // but make sure all tools are put away first
-					// check to see if the block is using them now
-					if(typeof tool.using === 'function' && tool.using.call(tool,self)){
-						tool.inuse.call(tool,self);
+					e.preventDefault();
+					self.designer.selected_block = self;
+					
+					// enable all the tools now
+					for(var name in self.designer.tools) {
+						tool = self.designer.tools[name];
+						tool.enable(); // enable them for use
+						tool.hung(); // but make sure all tools are put away first
+						// check to see if the block is using them now
+						if(typeof tool.using === 'function' && tool.using.call(tool,self)){
+							tool.inuse.call(tool,self);
+						}
 					}
-				}
 				
 			});
 		}
@@ -370,6 +400,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 			container : null,
 			designer : null,
 			html : '',
+			width : '15px',
 			position : {},
 			menu : {},
 			use : function(){
@@ -481,6 +512,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 		function build(){ 
 		
 			self.container = $('<a href="javascript:void(0);" class="aqueous-tool '+self.icon+'" title="'+self.title+'"></a>');
+			self.container.css('width', self.width);
 			self.designer.belt.append(self.container );
 			
 			if(self.html !== ''){
@@ -523,7 +555,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 		self.toggle = function(){
 			// always hide all other menus
 			$('.aqueous-menu').not(self.container).hide();
-			console.log(self.container);
 			self.container.toggle();
 		};
 		
@@ -533,7 +564,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 		function position(){
 					
 			self.position.top = self.tool.position.top + 38;
-			self.position.left = self.tool.position.left -2;
+			self.position.left = self.tool.position.left -1;
 			self.container.css({top : self.position.top , left : self.position.left});
 		}
 		
@@ -600,23 +631,25 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 			self.designer = designer;
 			
 			self.container = $('<div class="aqueous-dialog aqueous-clear" />');
+			self.container.css('width', self.designer.width -10);
 			buildTitle();
 			buildBody();
-			buildOverlay();
 			buildTabs();
-			$('body').append(self.container);
+			self.designer.belt.after(self.container);
 			buildButtons();
+			self.container.slideDown('slow');
 			
 		};
 		
 		// close dialog
 		self.close = function(){
-			self.container.remove();
-			self.overlay.remove();
+			self.container.slideUp('slow',function(){
+				self.container.remove();
+			});
 		};
 		
 		// PRIVATE
-		
+
 		// build title
 		function buildTitle(){
 			if(self.title !== ''){
@@ -630,22 +663,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 			self.body = $('<div class="aqueous-dialog-body"/>');
 			self.body.html(self.html);
 			self.container.append(self.body);
-			
-		}
-
-		// build overlay
-		function buildOverlay(){
-			
-			self.overlay = $('<div class="aqueous-dialog-overlay" />');
-			// put it behind the container
-			self.overlay.css({
-				'z-index' : self.container.css('z-index') -1,
-				height : $(window).height(),
-				width : $(window).width()});
-			self.overlay.on('click',function(e){
-				e.preventDefault();
-			})
-			$('body').append(self.overlay);
 			
 		}
 		
@@ -765,6 +782,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 	Aqueous.addTool('color',
 		{
 			html : '<input type="text" />',
+			width : '30px',
 			disabled : true,
 			title : 'text color',
 			enable : function(){
@@ -801,25 +819,77 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 	Aqueous.addTool('font',
 		{
-			icon : 'icon-font',
+			html : Aqueous.fonts.default.name.substring(0,5),
+			width : '50px',
 			title : 'change font',
+			disabled : true,
 			menu : {
 				title: 'Font',
-				items: [
-					{ label: 'toggle safe line',
-						checkbox : function(){
-							var self = this;
-							self.designer.toggleSafeLine();
+				items: function(){
+					var self = this;
+
+					var items = [];
+					if(Aqueous.fonts.system.length){
+						$.each(Aqueous.fonts.system,function(index, font){
+							items.push({ 
+								label: '<span style="font-family:' + font.style + '">' + font.name + '</span>',
+								use : function(block){
+									var self = this;
+									block.setStyle('font-family', font.style);
+									self.tool.container.html(font.name.substring(0,5));
+								}
+							});
+						});
+					}
+
+					if(items.length){
+						items.push({label : '<hr />'});
+					}
+
+					if(Aqueous.fonts.web.length){
+						$.each(Aqueous.fonts.web,function(index, font){
+							items.push({ 
+								label: '<span style="font-family:\''+ font.name + '\'">' + font.name + '</span>',
+								use : function(block){
+									var self = this;
+									block.setStyle('font-family', font.name);
+									self.tool.container.html(font.name.substring(0,5));
+								}
+							});
+						});
+					}
+					return items;
+				}
+			},
+			hang : function(block){
+				var self = this;
+				self.container.html(Aqueous.fonts.default.name.substring(0,5));
+			},
+			using : function(block){
+				var self = this;
+				var font_name = '';
+				var font_style = block.getStyle('font-family').replace(/ |'/g,'');
+				if(Aqueous.fonts.system.length){
+					$.each(Aqueous.fonts.system,function(index, font){
+						if(font.style.replace(/ |'/g,'') == font_style){
+							font_name = font.name;
+							return false;
 						}
-					},
-					{ label: 'toggle block borders',
-						checkbox : function(){
-							var self = this;
-							self.designer.toggleBlockBorders();
-							}
+					});
+				}
+
+				if(Aqueous.fonts.web.length){
+					$.each(Aqueous.fonts.web,function(index, font){
+						if(font.name.replace(/ |'/g,'') == font_style){
+							font_name = font.name;
+							return false;
 						}
-				]},
-			use : function(){}
+					});
+				}
+				self.container.html(font_name.substring(0,5));
+
+				return false;
+			}
 		}
 
 	);
@@ -830,13 +900,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 			title : 'change size',
 			disabled : true,
 			menu : {
-				title: 'text size',
+				title: 'Text Size',
 				items: function(){
 					var self = this;
 
 					var items = [];
-					var sizes = ['8','9','10','11','12','14','16','18','20','22','24','26','28','36','48','72']
-					$.each(sizes,function(index, size){
+					$.each(Aqueous.sizes,function(index, size){
 						items.push({ 
 							label: '<span style="line-height:' + size + 'px;font-size:' + size + 'px">' + size + '</span>',
 							use : function(block){
@@ -879,7 +948,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 			icon : 'icon-reorder',
 			title : 'move forward or back',
 			menu : {
-				title: 'move forward or back',
+				title: 'Move forward or back',
 				items: [
 					{ label: 'toggle safe line',
 						checkbox : function(){
