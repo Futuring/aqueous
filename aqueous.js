@@ -71,7 +71,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 			$.extend(self, {
 				aqueous : Aqueous,
 				element : $(element), // element
-				use : ['add', 'remove','bold','italic','color','background-color','font','size','image','layer','settings'], // tools to use
+				use : ['add', 'remove','bold','italic','color','background-color','font','size','image','level','settings'], // tools to use
 				tools : [], // active tools for this designer
 				beforeLoad : function(self){
 				},
@@ -1010,7 +1010,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 	);
 
-	Aqueous.addTool('layer',
+	Aqueous.addTool('level',
 		{
 			'class' : 'icon-reorder',
 			title : 'move forward or back',
