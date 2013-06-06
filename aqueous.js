@@ -51,7 +51,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 			] 
 		},
 		web_font_config : window.WebFontConfig || {},
-		sizes : ['8','9','10','11','12','14','16','18','20','22','24','26','28','36','48','72']
+		sizes : ['8','9','10','11','12','14','16','18','20','22','24','26','28','36','48','72'],
+		base: ''
 	};
 
 	Aqueous = $.extend({},defaults,Aqueous);
@@ -167,27 +168,23 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 			if(!self.aqueous.is_loaded){
 
-				if(typeof options.base === 'undefined'){
-					options.base = '';
-				}
-
 				// load fonts
 				loadWebFonts();
 
 				// load css files
 				var css_files = ['aqueous','font-awesome','spectrum','jqueryui'];
 				$.each(css_files,function(index, file){
-					$('head').append('<link rel="stylesheet" type="text/css" href="' + options.base + 'css/' + file + '.css" >');
+					$('head').append('<link rel="stylesheet" type="text/css" href="' + self.aqueous.base + 'css/' + file + '.css" >');
 				});
 
 				if(typeof $.draggable !== 'function' || typeof $.resizable !== 'function'){
 					self.aqueous.loading.push('jqueryui');
-					$script(options.base + 'scripts/jqueryui.js', 'jqueryui');
+					$script(self.aqueous.base + 'scripts/jqueryui.js', 'jqueryui');
 				}
 
 				if(typeof $.spectrum !== 'function'){
 					self.aqueous.loading.push('spectrum');
-					$script(options.base + 'scripts/spectrum.js', 'spectrum');
+					$script(self.aqueous.base + 'scripts/spectrum.js', 'spectrum');
 				}
 
 				if(self.aqueous.loading.length > 0){
