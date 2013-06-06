@@ -54,7 +54,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 		sizes : ['8','9','10','11','12','14','16','18','20','22','24','26','28','36','48','72']
 	};
 
-	$.extend(Aqueous,defaults,Aqueous);
+	Aqueous = $.extend({},defaults,Aqueous);
 
 	// Designer
 	function Designer(element, options) {
