@@ -213,21 +213,21 @@ License: MIT
     height: 3px;
     left: -1px;
     right: -1px;
-    border: 1px solid #000;
-    background: white;
+    border: 1px solid #fff;
+    background: transparent;
     opacity: .8;
 }
 
 /* Basic display options (colors, fonts, global widths) */
 .sp-container {
     border-radius: 0;
-    background-color: #ECECEC;
-    border: solid 1px #f0c49B;
+    background-color: #fff;
+    border: solid 1px #ccc;
     padding: 0;
 }
 .sp-container, .sp-container button, .sp-container input, .sp-color, .sp-hue
 {
-    font: normal 12px "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", Geneva, Verdana, sans-serif;
+    font: normal 12px "Droid Serif";
     -webkit-box-sizing: border-box;
     -moz-box-sizing: border-box;
     -ms-box-sizing: border-box;
@@ -239,7 +239,7 @@ License: MIT
 }
 .sp-color, .sp-hue
 {
-    border: solid 1px #666;
+    border: none;
 }
 
 /* Input */
@@ -389,63 +389,30 @@ License: MIT
 
 /* Buttons: http://hellohappy.org/css3-buttons/ */
 .sp-container button {
-  background-color: #eeeeee;
-  background-image: -webkit-linear-gradient(top, #eeeeee, #cccccc);
-  background-image: -moz-linear-gradient(top, #eeeeee, #cccccc);
-  background-image: -ms-linear-gradient(top, #eeeeee, #cccccc);
-  background-image: -o-linear-gradient(top, #eeeeee, #cccccc);
-  background-image: -ms-linear-gradient(top, #eeeeee, #cccccc);
-  background-image: linear-gradient(to bottom, #eeeeee, #cccccc);
+  background-color:#fff;
   border: 1px solid #ccc;
-  border-bottom: 1px solid #bbb;
-  border-radius: 3px;
-  color: #333;
+  color: #777;
   font-size: 14px;
   line-height: 1;
   padding: 5px 4px;
   text-align: center;
-  text-shadow: 0 1px 0 #eee;
   vertical-align: middle;
+  text-decoration: none;
 }
 .sp-container button:hover {
-    background-color: #dddddd;
-    background-image: -webkit-linear-gradient(top, #dddddd, #bbbbbb);
-    background-image: -moz-linear-gradient(top, #dddddd, #bbbbbb);
-    background-image: -ms-linear-gradient(top, #dddddd, #bbbbbb);
-    background-image: -o-linear-gradient(top, #dddddd, #bbbbbb);
-    background-image: -ms-linear-gradient(top, #dddddd, #bbbbbb);
-    background-image: linear-gradient(to bottom, #dddddd, #bbbbbb);
-    border: 1px solid #bbb;
-    border-bottom: 1px solid #999;
-    cursor: pointer;
-    text-shadow: 0 1px 0 #ddd;
-}
-.sp-container button:active {
-    border: 1px solid #aaa;
-    border-bottom: 1px solid #888;
-    -webkit-box-shadow: inset 0 0 5px 2px #aaaaaa, 0 1px 0 0 #eeeeee;
-    -moz-box-shadow: inset 0 0 5px 2px #aaaaaa, 0 1px 0 0 #eeeeee;
-    -ms-box-shadow: inset 0 0 5px 2px #aaaaaa, 0 1px 0 0 #eeeeee;
-    -o-box-shadow: inset 0 0 5px 2px #aaaaaa, 0 1px 0 0 #eeeeee;
-    box-shadow: inset 0 0 5px 2px #aaaaaa, 0 1px 0 0 #eeeeee;
-}
-.sp-cancel
-{
-    font-size: 11px;
-    color: #d93f3f !important;
-    margin:0;
-    padding:2px;
-    margin-right: 5px;
-    vertical-align: middle;
-    text-decoration:none;
-
-}
-.sp-cancel:hover
-{
-    color: #d93f3f !important;
-    text-decoration: underline;
+    color: #333;
 }
 
+.sp-cancel{
+  background-color:#fff;
+  color: #777;
+  font-size: 10px;
+  line-height: 1;
+  padding: 5px 4px;
+  text-align: center;
+  vertical-align: middle;
+  text-decoration: none;
+} 
 
 .sp-palette span:hover, .sp-palette span.sp-thumb-active
 {

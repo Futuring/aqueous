@@ -71,7 +71,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 			$.extend(self, {
 				aqueous : Aqueous,
 				element : $(element), // element
-				use : ['add', 'remove','bold', 'italic', 'color','font','size','image','layer','settings'], // tools to use
+				use : ['add', 'remove','bold','italic','color','background-color','font','size','image','layer','settings'], // tools to use
 				tools : [], // active tools for this designer
 				beforeLoad : function(self){
 				},
@@ -81,7 +81,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 				block_ids : 0,
 				zindex_start : 1000,
 				selected_block : null, // the current/selected block
-				dialog : null
+				dialog : null,
+				safe_line_border : true,
+				block_borders : true
 			}, options);
 		}();
 		
@@ -134,10 +136,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 		};
 		
 		// toggle safeline
-		self.toggleSafeLine = function(){
-			self.safe_line.toggle();
+		self.toggleSafeLineBorder = function(){
+			self.safe_line_border = self.safe_line_border ? 'none' : '#ccc 1px dashed'; 
+			self.safe_line.css('border', self.safe_line_border);
+			self.safe_line_border = self.safe_line_border == 'none' ? false : true;
+
 		};
-	
+		
+		// toggle block borders
+		self.toggleBlockBorders = function(){
+
+			self.block_borders = self.block_borders ? 'none' : '#ccc 1px dotted'; 
+			$('.aqueous-block-editable').css('border', self.block_borders);
+			self.block_borders = self.block_borders == 'none' ? false : true;
+		};
+
 		// show dialog
 		self.showDialog = function(options){
 			// we only allow one dialog at a time
@@ -229,16 +242,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 			self.element.css({padding : '5px', border : '#ccc 1px solid'});
 			self.element.height(self.height);
 			self.element.width(self.width);
-			
 			self.height = self.element.height();
 			self.width = self.element.width();
+
+			// binding
+			self.element.on('click', function(e){$('.aqueous-menu').hide();});
 			
 			self.safe_line = $('<div class="aqueous-safe-line" />');
-			
-			// binding
-			self.safe_line.on('click', function(e){$('.aqueous-menu').hide();});
 			self.safe_line.css({height: self.height-13 + 'px', width: self.width-13 + 'px'});
-			
 			self.element.wrapInner(self.safe_line);
 		
 		}
@@ -337,6 +348,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 			
 			// set default font
 			self.editable.css('font-family', Aqueous.fonts.default);
+			if(!self.designer.block_borders){
+				self.editable.css('border', 'none');
+			}
+
 			if(self.type == 'text'){
 				self.editable.html('add your text here');
 			}
@@ -368,7 +383,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 			// tool binding
 			self.container.on('click', 
 				function(e){
-					e.preventDefault();
 					self.designer.selected_block = self;
 					
 					// enable all the tools now
@@ -395,12 +409,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 		var __contructor = function(){
 		// Merge the users options with our defaults
 		$.extend(self, {
-			icon : '',
+			'class' : '',
 			disabled : false,
 			container : null,
 			designer : null,
 			html : '',
-			width : '15px',
+			css : {'width' : '15px'},
 			position : {},
 			menu : {},
 			use : function(){
@@ -511,8 +525,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 		// Build the tool container
 		function build(){ 
 		
-			self.container = $('<a href="javascript:void(0);" class="aqueous-tool '+self.icon+'" title="'+self.title+'"></a>');
-			self.container.css('width', self.width);
+			self.container = $('<a href="javascript:void(0);" class="aqueous-tool '+self['class']+'" title="'+self.title+'"></a>');
+			self.container.css(self.css);
 			self.designer.belt.append(self.container );
 			
 			if(self.html !== ''){
@@ -713,7 +727,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 	// Add Tools to
 	Aqueous.addTool('bold',
 		{
-			icon : 'icon-bold',
+			'class' : 'icon-bold',
 			disabled : true,
 			use : function(block){
 				block.setStyle('font-weight', 'bold');
@@ -730,7 +744,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 	Aqueous.addTool('italic',
 		{
-			icon : 'icon-italic',
+			'class' : 'icon-italic',
 			disabled : true,
 			use : function(block){
 				block.setStyle('font-style', 'italic');
@@ -747,7 +761,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 	Aqueous.addTool('add',
 		{
-			icon : 'icon-plus-sign',
+			'class' : 'icon-plus-sign',
 			title : 'add a text block',
 			use : function(){
 				var self = this;
@@ -759,7 +773,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 	Aqueous.addTool('remove',
 		{
-			icon : 'icon-remove-sign',
+			'class' : 'icon-remove-sign',
 			title : 'remove a block',
 			disabled : true,
 			use : function(){
@@ -782,7 +796,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 	Aqueous.addTool('color',
 		{
 			html : '<input type="text" />',
-			width : '30px',
+			css : {'width':'30px'},
+			'class' : 'color',
 			disabled : true,
 			title : 'text color',
 			enable : function(){
@@ -797,16 +812,68 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 				var self = this;
 				
 				$('input',self.container).spectrum({
-					color: '#000',
+					color: '#fff',
 					disabled: true,
+					show : function(color){
+						$('.sp-preview-inner',self.container).css({'background-color' : '#fff'});
+					},
+					move : function(color){
+						$('.sp-preview-inner',self.container).css({color : color.toHexString()});
+						$('.sp-preview-inner',self.container).css({'background-color' : '#fff'});
+					},
 					change: function(color) {
 						self.designer.selected_block.setStyle({color : color.toHexString()});
+					}
+				});
+
+				$('.sp-preview-inner',self.container).text('T');
+			},
+			using : function(block){
+				var self = this;
+				var color = block.getStyle('color');
+				
+				if(color){
+					$('input',self.container).spectrum('set', color);
+					$('.sp-preview-inner',self.container).css({color : color});
+					$('.sp-preview-inner',self.container).css({'background-color' : '#fff'});
+				}
+				return false;
+			}
+		}
+
+	);
+
+	Aqueous.addTool('background-color',
+		{
+			html : '<input type="text" />',
+			css : {'width':'30px'},
+			'class' : 'background-color',
+			disabled : true,
+			title : 'background color',
+			enable : function(){
+				var self = this;
+				$('input',self.container).spectrum('enable');
+			},
+			disable : function(){
+				var self = this;
+				$('input',self.container).spectrum('disable');
+			},
+			bind : function(){
+				var self = this;
+				
+				$('sp-preview',self.container).prepend('<div>T<div/>');
+
+				$('input',self.container).spectrum({
+					color: '#fff',
+					disabled: true,
+					change: function(color) {
+						self.designer.selected_block.setStyle({'background-color' : color.toHexString()});
 					}
 				}); 
 			},
 			using : function(block){
 				var self = this;
-				var color = block.getStyle('color');
+				var color = block.getStyle('background-color');
 				
 				if(color){
 					$('input',self.container).spectrum('set', color);
@@ -820,7 +887,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 	Aqueous.addTool('font',
 		{
 			html : Aqueous.fonts.default.name.substring(0,5),
-			width : '50px',
+			css : {'width':'50px'},
 			title : 'change font',
 			disabled : true,
 			menu : {
@@ -936,7 +1003,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 	Aqueous.addTool('image',
 		{
-			icon : 'icon-picture',
+			'class' : 'icon-picture',
 			title : 'add image',
 			use : function(){}
 		}
@@ -945,50 +1012,59 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 	Aqueous.addTool('layer',
 		{
-			icon : 'icon-reorder',
+			'class' : 'icon-reorder',
 			title : 'move forward or back',
+			disabled : true,
 			menu : {
 				title: 'Move forward or back',
 				items: [
-					{ label: 'toggle safe line',
-						checkbox : function(){
+					{ 
+						label: 'forward a level',
+						use : function(block){
 							var self = this;
-							self.designer.toggleSafeLine();
+							var zindex = parseInt(block.container.css('z-index'), 10) + 1;
+							block.container.css('z-index', zindex);
+
 						}
 					},
-					{ label: 'toggle block borders',
-						checkbox : function(){
+					{ 
+						label: 'back a level',
+						use : function(block){
 							var self = this;
-							self.designer.toggleBlockBorders();
-							}
+
+							var zindex = parseInt(block.container.css('z-index'), 10) - 1;
+							block.container.css('z-index', zindex);
+
 						}
-				]},
-			use : function(){}
+					}
+				]
+			}
 		}
 
 	);
 
 	Aqueous.addTool('settings',
 		{
-			icon : 'icon-cog',
+			'class' : 'icon-cog',
 			menu : {
 				title: 'Settings',
 				items: [
-					{ text: 'toggle safe line',
-						checkbox : function(){
+					{ 
+						label: 'toggle safe line',
+						use : function(){
 							var self = this;
-							self.designer.toggleSafeLine();
+							self.tool.designer.toggleSafeLineBorder();
 						}
 					},
-					{ text: 'toggle block borders',
-						checkbox : function(){
+					{ 
+						label: 'toggle block borders',
+						use : function(){
 							var self = this;
-							self.designer.toggleBlockBorders();
+							self.tool.designer.toggleBlockBorders();
 							}
 						}
 				]},
-			title : 'designer settings',
-			use : function(){}
+			title : 'designer settings'
 		}
 
 	);
