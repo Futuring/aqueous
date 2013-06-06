@@ -216,7 +216,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 			}
 
 			// otherwise allow webfonts from anywhere
-			window.WebFontConfig = Aqueous.web_font_config;
+			var WebFontConfig = Aqueous.web_font_config;
       		self.aqueous.loading.push('webfonts');
       		$script('https://ajax.googleapis.com/ajax/libs/webfont/1/webfont.js','webfonts');
 
@@ -813,15 +813,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 				$('input',self.container).spectrum({
 					color: '#fff',
 					disabled: true,
+					showAlpha: true,
+					showInput: true,
 					show : function(color){
 						$('.sp-preview-inner',self.container).css({'background-color' : '#fff'});
 					},
 					move : function(color){
-						$('.sp-preview-inner',self.container).css({color : color.toHexString()});
+						$('.sp-preview-inner',self.container).css({color : color.toRgbString()});
 						$('.sp-preview-inner',self.container).css({'background-color' : '#fff'});
 					},
 					change: function(color) {
-						self.designer.selected_block.setStyle({color : color.toHexString()});
+						self.designer.selected_block.setStyle({color : color.toRgbString()});
 					}
 				});
 
@@ -865,8 +867,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 				$('input',self.container).spectrum({
 					color: '#fff',
 					disabled: true,
+					showAlpha: true,
+					showInput: true,
 					change: function(color) {
-						self.designer.selected_block.setStyle({'background-color' : color.toHexString()});
+						self.designer.selected_block.setStyle({'background-color' : color.toRgbString()});
 					}
 				}); 
 			},
