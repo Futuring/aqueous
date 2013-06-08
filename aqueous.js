@@ -179,12 +179,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 				if(typeof $.draggable !== 'function' || typeof $.resizable !== 'function'){
 					self.aqueous.loading.push('jqueryui');
-					$script(self.aqueous.base + 'scripts/jqueryui.js', 'jqueryui');
+					$script(self.aqueous.base + 'js/jqueryui.js', 'jqueryui');
 				}
 
 				if(typeof $.spectrum !== 'function'){
 					self.aqueous.loading.push('spectrum');
-					$script(self.aqueous.base + 'scripts/spectrum.js', 'spectrum');
+					$script(self.aqueous.base + 'js/spectrum.js', 'spectrum');
 				}
 
 				if(self.aqueous.loading.length > 0){
