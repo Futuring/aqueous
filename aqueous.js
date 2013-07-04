@@ -294,7 +294,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 				id : 0,
 				classes : '',
 				type : 'text',
-				container : null
+				container : null,
+				width : '130px',
+				height : '30px',
+				file : null
 			}, options);
 			
 		}();
@@ -329,9 +332,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 			return self.editable.css(name);
 		};
 		
-			// Get the element's content
+		// Get the element's content
 		self.getContent = function(){
-			return self.html();
+			return self.editable.html();
+		};
+
+		// Set the element's content
+		self.setContent = function(content){
+			self.editable.html(self.editable.html().replace(self.editable.text(),''));
+			self.editable.prepend(content);
 		};
 	
 		// PRIVATE
@@ -343,17 +352,40 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 			self.container = $('<div class="aqueous-text aqueous-block" id="aqueous-block-'+ self.id +'">');
 			self.container.css({'z-index' : self.designer.zindex_start+self.id, position : 'absolute'});
 			self.handle = $('<div class="aqueous-block-handle icon-move"></div>');
-			self.editable = $('<div class="aqueous-block-editable" contenteditable="true"></div>');
-			
-			// set default font
-			self.editable.css('font-family', Aqueous.fonts.default);
+			if(self.type == 'image'){
+
+				URL = window.URL || window.webkitURL;
+
+				var image = image = new Image();
+				self.editable = $('<img class="aqueous-block-editable" />');
+				image.onload = function(){
+					self.height = this.height;
+					self.width = this.width;
+					self.editable.css({height : self.height, width : self.width});
+					self.container.css({height : self.height+35, width : self.width+35});
+					self.editable.attr('src', URL.createObjectURL(self.file));
+
+					self.editable.resizable({
+						handles :'all',
+						ghost: true,
+						aspectRatio: true,
+						alsoResize: self.container
+					});
+
+				}
+				image.src = URL.createObjectURL(self.file);
+
+			}
+			else if(self.type == 'text'){
+				self.editable = $('<div class="aqueous-block-editable" contenteditable="true"></div>');
+				self.setContent('add your text here');
+				self.editable.css({height : self.height, width : self.width, 'font-family' : Aqueous.fonts.default});
+			}
+
 			if(!self.designer.block_borders){
 				self.editable.css('border', 'none');
 			}
 
-			if(self.type == 'text'){
-				self.editable.html('add your text here');
-			}
 			self.container.append(self.handle);
 			self.container.append(self.editable);
 		}
@@ -368,9 +400,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 			});
 			
 			// start resizable
-			self.editable.resizable({
-				ghost: true
-			});
+			if(self.type != 'image'){
+				self.editable.resizable({
+					handles :'all',
+					ghost: true
+				});
+			}
 			
 			// show/hide drag handle
 			self.container.mouseover(function() {
@@ -416,6 +451,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 			css : {'width' : '15px'},
 			position : {},
 			menu : {},
+			dialog : {},
 			use : function(){
 			}, 
 			reset : function(){
@@ -476,6 +512,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 		self.hasMenu = function(){
 			return typeof self.menu.items === 'object' || typeof self.menu.items === 'function';
 		};
+
+		// has dialog
+		self.hasDialog = function(){
+			return typeof self.dialog.html === 'string' || typeof self.dialog.html === 'function';
+		};
 		
 		// PRIVATE
 
@@ -513,8 +554,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 						self.use.call(self, self.designer.selected_block);
 					}
 					
+					// we dont rebuild the menu every time -- just once then toggle
 					if(self.hasMenu()){
 						self.menu.toggle();
+					}
+
+					// we rebuid the dialog every time
+					if(self.hasDialog()){
+						self.dialog = new Dialog(self.dialog);
+						// designer then self -- cause a dialog doesnt always belong to a tool
+						self.dialog.show(self.designer,self);
 					}
 				
 				}
@@ -608,17 +657,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 						else{
 							item.use.call(self);
 						}
-						
 					}
-					else{
-						if(self.tool.disabled){
-							self.use.call(self,self.tool.designer.selected_block);
-						}
-						else{
-							self.use.call(self);
-						}
-					}
-					
 				});
 				
 				self.container.append(self.items[index].container);
@@ -631,18 +670,23 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 		var self = this;
 		$.extend(self, {
 			title:'',
-			tool: {},
+			tool: null,
 			tabs : [],
 			buttons:[],
-			confirm : null
+			confirm : null,
 		}, options);
 
 		// PUBLIC
 
-		// show only allow one dialog at a time to we show it not add it
-		self.show = function(designer){
-			self.designer = designer;
-			
+		// show the dialog
+		// unlike the menu the dialog can be trigger anytime - by anything
+		// not just a tool
+		self.show = function(designer, tool){
+			self.designer = designer
+			if(typeof tool != 'undefined'){
+				self.tool = tool;
+			}
+
 			self.container = $('<div class="aqueous-dialog aqueous-clear" />');
 			self.container.css('width', self.designer.width -10);
 			buildTitle();
@@ -674,7 +718,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 		function buildBody(){
 			
 			self.body = $('<div class="aqueous-dialog-body"/>');
-			self.body.html(self.html);
+
+			if(typeof self.html == 'function'){
+				self.body.html(self.html.call(self));
+			}
+			else{
+				self.body.html(self.html);
+			}
+			
 			self.container.append(self.body);
 			
 		}
@@ -691,15 +742,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 			
 			self.button_container = $('<div class="aqueous-dialog-buttons" />');
 			
-			self.buttons.unshift({label:'Cancel', click : function(){
+			self.buttons.unshift({label:'Cancel', use : function(){
 				self.close();
 			}});
 			
 			if(typeof self.confirm === 'function'){
 				self.buttons.push({
 					label:'Continue', 
-					click : function(){
-						self.confirm.call(self);
+					use : function(){
+						if(self.tool !== null){
+							self.confirm.call(self,self.tool.designer.selected_block);
+						}
+						else{
+							self.confirm.call(self);
+						}
+						
 						self.close();
 					}
 				});
@@ -710,10 +767,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 				self.buttons[index].container = $('<a class="aqueous-button" href="javascript:void(0);" />');
 				self.buttons[index].container.html(button.label);
 				self.buttons[index].container.on('click',function(){
-					if(typeof button.click === 'function'){
-						button.click.call(self, self.buttons[index]);
+					if(typeof button.use === 'function'){
+						if(self.tool !== null){
+							button.use.call(self,self.tool.designer.selected_block);
+						}
+						else{
+							button.use.call(self);
+						}
 					} 
-				
 			});
 			
 			self.button_container.append(self.buttons[index].container);
@@ -976,6 +1037,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 					var items = [];
 					$.each(Aqueous.sizes,function(index, size){
+						size = Math.round(size);
 						items.push({ 
 							label: '<span style="line-height:' + size + 'px;font-size:' + size + 'px">' + size + '</span>',
 							use : function(block){
@@ -996,8 +1058,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 			using : function(block){
 				var self = this;
 				var size = block.getStyle('font-size').replace('px', '');
+				size = Math.round(size);
 				self.container.html(size);
-
 				return false;
 			}
 		}
@@ -1008,7 +1070,29 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 		{
 			'class' : 'icon-picture',
 			title : 'add image',
-			use : function(){}
+			dialog : {
+				title: 'Add Image',
+				html: function(){
+					var self = this;
+
+					return ['<input type="file" name="file" id="file" />'].join('');
+				},
+				buttons : [{
+					label  : 'Add',
+					use : function(){
+						var self = this;
+						var files = $('input', self.container).get(0).files;
+						if(typeof files == 'undefined' || file === null){
+							return false;
+						}
+
+						var file = files[0];
+						var block = self.tool.designer.addBlock({type : 'image', file :file});
+
+						self.close();
+		    		}	
+				}]
+			}
 		}
 
 	);

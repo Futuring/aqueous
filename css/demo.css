@@ -15,15 +15,26 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **/
+
+h1 sub{
+	font-size: 16px;
+}
+
 .wrapper{
 	font-family: 'Droid Serif';
-	width:650px;
+	width:610px;
 	margin-left : auto;
 	margin-right :auto;
 	padding : 25px;
 
 }
 
-.wrapper h1{
-	text-align:center
-}
+	.wrapper h1{
+		text-align:center
+	}
+
+	.wrapper #intro{
+		font-size: 14px;
+		color:#777;
+		margin-left :10px;
+	}
