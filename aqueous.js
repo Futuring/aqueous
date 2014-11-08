@@ -52,7 +52,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 		},
 		web_font_config : window.WebFontConfig || {},
 		sizes : ['8','9','10','11','12','14','16','18','20','22','24','26','28','36','48','72'],
-		base: ''
+		base: 'https://rawgit.com/shuttercard/aqueous/master/'
 	};
 
 	Aqueous = $.extend({},defaults,Aqueous);
